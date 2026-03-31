@@ -20,6 +20,7 @@ BLECharacteristic* g_rcBleMainChar;
 BLECharacteristic* g_rcBleGpsMainChar;
 BLECharacteristic* g_rcBleGpsTimeChar;
 volatile bool g_rcBleConnected;
+uint16_t g_rcBleConnId;
 
 /**
  * @brief BLE server callbacks used to track RaceChrono connection state.
@@ -32,13 +33,14 @@ volatile bool g_rcBleConnected;
  */
 class ServerCallbacks : public BLEServerCallbacks {
 	public:
-	void onConnect(BLEServer*) override {
+	void onConnect(BLEServer*, esp_ble_gatts_cb_param_t* param) override {
 		g_rcBleConnected = true;
+		g_rcBleConnId = param->connect.conn_id;
 		Serial.println("RaceChrono connected");
 	}
-
 	void onDisconnect(BLEServer* server) override {
 		g_rcBleConnected = false;
+		g_rcBleConnId = kInvalidBleConnId;
 		Serial.println("RaceChrono disconnected");
 		RcFilterRequest msg{RcFilterCommand::DenyAll, 0, 0};
 		xQueueSend(g_rcPidFilterRequestQueue, &msg, 0);
@@ -254,7 +256,7 @@ void PidFilterState::markPidSent(size_t index, uint32_t now) {
 	}
 
 	if (index < requestedPidCount) {
-		requestedPids[index].nextDueMs =now + requestedPids[index].intervalMs;
+		requestedPids[index].nextDueMs = now + requestedPids[index].intervalMs;
 	}
 
 	xSemaphoreGive(mutex);

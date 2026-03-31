@@ -14,6 +14,8 @@ static constexpr uint16_t kCanFilterCharUuid = 0x0002;
 static constexpr uint16_t kGpsMainCharUuid = 0x0003;
 static constexpr uint16_t kGpsTimeCharUuid = 0x0004;
 
+static constexpr uint16_t kInvalidBleConnId = 0xFFFF;
+
 static constexpr size_t kMaxRequestedPids = 16;
 static constexpr size_t kFilterRequestQueueSize = 8;
 
@@ -54,5 +56,6 @@ extern BLECharacteristic* g_rcBleMainChar;
 extern BLECharacteristic* g_rcBleGpsMainChar;
 extern BLECharacteristic* g_rcBleGpsTimeChar;
 extern volatile bool g_rcBleConnected;
+extern uint16_t g_rcBleConnId;
 
 bool initRaceChronoBle();

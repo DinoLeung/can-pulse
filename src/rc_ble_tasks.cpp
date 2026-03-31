@@ -1,13 +1,14 @@
 #include "rc_ble_tasks.h"
 #include <cstdlib>
+#include "esp_gatt_common_api.h"
 #include "rc_ble.h"
 #include "rc_ble_helper.h"
 #include "gps_helper.h"
 #include "can_frame_cache.h"
 #include "gps_snapshot.h"
 
-// 200Hz, it's shared across all the can PIDs
-constexpr TickType_t NotifyInterval = pdMS_TO_TICKS(5);
+// Target 500Hz, it's shared across all the can PIDs, realistic 300Hz avg
+constexpr TickType_t NotifyInterval = pdMS_TO_TICKS(2);
 // 25Hz
 constexpr TickType_t GpsNotifyInterval = pdMS_TO_TICKS(40);
 
@@ -87,15 +88,20 @@ static void raceChronoCanFilterRequestTask(void* pvParameters) {
 				break;
 			}
 
-			g_rcPidFilterState.requestedPids[g_rcPidFilterState.requestedPidCount].pid = request.pid;
-			g_rcPidFilterState.requestedPids[g_rcPidFilterState.requestedPidCount].active = true;
-			g_rcPidFilterState.requestedPids[g_rcPidFilterState.requestedPidCount].intervalMs = request.intervalMs;
-			g_rcPidFilterState.requestedPids[g_rcPidFilterState.requestedPidCount].nextDueMs = millis();
+			RequestedPid requestedPid{};
+			requestedPid.pid = request.pid;
+			requestedPid.active = true;
+			// requestedPid.intervalMs = request.intervalMs;
+			// We use the notify task interval instead, so it's at best effort
+			requestedPid.intervalMs = NotifyInterval;
+			requestedPid.nextDueMs = millis();
+
+			g_rcPidFilterState.requestedPids[g_rcPidFilterState.requestedPidCount] = requestedPid;
 			++g_rcPidFilterState.requestedPidCount;
+
 			Serial.printf(
-				"RaceChrono filter updated: allow pid=0x%08lX interval=%u ms\n",
-				static_cast<unsigned long>(request.pid),
-				static_cast<unsigned>(request.intervalMs));
+				"RaceChrono filter updated: allow pid=0x%08lX\n",
+				static_cast<unsigned long>(requestedPid.pid));
 			break;
 		}
 		xSemaphoreGive(g_rcPidFilterState.mutex);
@@ -105,30 +111,41 @@ static void raceChronoCanFilterRequestTask(void* pvParameters) {
 /**
  * @brief FreeRTOS task responsible for streaming CAN frames over BLE to RaceChrono.
  *
- * This task runs at a fixed interval (~200 Hz) and orchestrates the selection
- * and transmission of CAN frames based on the current filter configuration.
+ * This task runs at a fixed interval (`NotifyInterval`, currently 2 ms / 500 Hz)
+ * and selects at most one CAN frame per iteration for transmission over the
+ * RaceChrono CAN main characteristic.
  *
  * High-level flow per iteration:
- * 1. Check BLE connection state and early-exit if disconnected.
- * 2. Snapshot the current filter configuration from `PidFilterState` to avoid
- *    holding locks during processing.
- * 3. Depending on mode:
+ * 1. Check BLE connection state, connection ID validity, and characteristic
+ *    availability. If any of these are invalid, back off and retry later.
+ * 2. Query the BLE stack for the number of currently sendable packets for the
+ *    active connection using `esp_ble_get_cur_sendable_packets_num()`. If no
+ *    transmit buffer is available, skip this iteration.
+ * 3. Snapshot the current filter configuration from `PidFilterState` to avoid
+ *    holding locks during frame selection and payload building.
+ * 4. Depending on mode:
  *    - Allow-all: round-robin through the cache using `allowAllCursor`.
  *    - Specific PIDs: select the next due PID via `nextDuePid()` and fetch
  *      its cached frame.
- * 4. If a frame is available, pack it into RaceChrono's 13-byte payload format
+ * 5. If a frame is available, pack it into RaceChrono's 13-byte payload format
  *    (4-byte identifier + 8-byte data + implicit DLC=8) and notify via BLE.
- * 5. For specific PID mode, update scheduling state using `markPidSent()`.
+ * 6. In specific-PID mode, update scheduling state using `markPidSent()` after
+ *    a successful notify attempt.
  *
  * Concurrency model:
  * - Filter state and cache access are internally synchronized via mutexes.
- * - This task only operates on snapshots or uses thread-safe accessors.
+ * - This task snapshots filter state up front and uses thread-safe cache
+ *   accessors so it does not hold locks while notifying over BLE.
  *
  * Scheduling notes:
- * - `allowAllCursor` and `requestedPidCursor` maintain fairness across frames
- *   and requested PIDs respectively.
- * - The task interval (`NotifyInterval`) effectively sets the minimum gap
- *   between BLE notifications.
+ * - `allowAllCursor` and `requestedPidCursor` maintain fairness across cached
+ *   frames and requested PIDs respectively.
+ * - The task interval (`NotifyInterval`) sets the minimum gap between notify
+ *   attempts, not a guaranteed delivery interval.
+ * - BLE transmit buffer availability is used as backpressure, so the task will
+ *   intentionally skip ticks when the stack cannot accept another packet.
+ * - When no filters are active, the task backs off for longer to reduce CPU
+ *   usage.
  *
  * @param pvParameters Unused FreeRTOS task parameter.
  */
@@ -138,12 +155,19 @@ static void raceChronoCanNotifyTask(void* pvParameters) {
 	static size_t allowAllCursor = 0;
 	static size_t requestedPidCursor = 0;
 	while (true) {
-		if (!g_rcBleConnected) {
-			vTaskDelay(pdMS_TO_TICKS(100));
+		if (!g_rcBleConnected || g_rcBleConnId == kInvalidBleConnId || g_rcBleMainChar == nullptr) {
+			vTaskDelayUntil(&lastWake, NotifyInterval * 100);
 			continue;
 		}
 
-		uint32_t now = millis();
+		// Skip the tick if there's no buffer
+		const uint16_t sendablePackets = esp_ble_get_cur_sendable_packets_num(g_rcBleConnId);
+		if (sendablePackets == 0) {
+			vTaskDelayUntil(&lastWake, NotifyInterval);
+			continue;
+		}
+
+		const uint32_t now = millis();
 		bool allowAll = false;
 		uint16_t allowAllIntervalMs = 0;
 		RequestedPid requestedPids[kMaxRequestedPids]{};
@@ -158,13 +182,13 @@ static void raceChronoCanNotifyTask(void* pvParameters) {
 
 		if (!allowAll && requestedPidCount <= 0) {
 			// Tick longer to free up cpu time
-			vTaskDelayUntil(&lastWake, pdMS_TO_TICKS(1000));
+			vTaskDelayUntil(&lastWake, NotifyInterval * 1000);
 			continue;
 		}
 
 		bool hasFrameToSend = false;
-		uint32_t framePid;
-		uint8_t frameData[8];
+		uint32_t framePid = 0;
+		uint8_t frameData[8]{};
 		size_t selectedRequestedPidIndex = kMaxRequestedPids;
 
 		// Snapshot cache allow all mode
@@ -175,7 +199,7 @@ static void raceChronoCanNotifyTask(void* pvParameters) {
 		// Snapshot cache specific PIDs mode
 		if (requestedPidCount > 0) {
 			RequestedPid duePid;
-			bool hasDue = g_rcPidFilterState.nextDuePid(
+			const bool hasDue = g_rcPidFilterState.nextDuePid(
 				now,
 				requestedPidCursor,
 				duePid,
