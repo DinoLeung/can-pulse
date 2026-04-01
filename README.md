@@ -20,6 +20,7 @@ The basic firmware is complete and functional:
 - CAN frames are read from the vehicle bus.
 - Data is cached and filtered.
 - Frames are forwarded over BLE using the RaceChrono DIY device protocol.
+- Overall update rate at 300 Hz(±30 Hz) without overclocking/overvolting
 
 This means the device is already usable for real-time telemetry in RaceChrono.
 
@@ -29,11 +30,10 @@ The next major milestone is adding high-frequency GPS data support using the [AS
 
 Planned capabilities:
 - Integrate GPS data alongside CAN telemetry.
-- Support higher update rates than typical phone-based GPS.
+- 10-25 Hz GPS update rate(vs typical phone GPS at 1 Hz)
 - Improve lap timing accuracy and track position fidelity.
 
 Longer term, this will allow the device to act as a complete standalone telemetry unit, rather than relying on the phone for positioning data.
-
 
 ## Hardware
 
@@ -48,7 +48,6 @@ This project is heavily based on reverse engineering work documented by the comm
 That document provides a detailed breakdown of the Gen2 GR86/BRZ CAN bus signals and effectively serves as the foundation for this project. It guided the identification of useful frames, signal meanings, and overall approach to decoding and forwarding data.
 
 Without that work, building a usable and accurate telemetry pipeline would be significantly more time-consuming.
-
 
 ## Oil Pressure Oil Temperature Bolt-on
 
