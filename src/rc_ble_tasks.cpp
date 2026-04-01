@@ -18,8 +18,8 @@ static void raceChronoGpsNotifyTask(void*);
 
 void startRaceChronoTasks() {
 	xTaskCreate(raceChronoCanFilterRequestTask, "RaceChronoCanFilterRequest", 4096, nullptr, 1, nullptr);
-	xTaskCreate(raceChronoCanNotifyTask, "RaceChronoCanNotify", 4096, nullptr, 1, nullptr);
-	// xTaskCreate(raceChronoGpsNotifyTask, "RaceChronoGpsNotify", 4096, nullptr, 1, nullptr);
+	xTaskCreate(raceChronoCanNotifyTask, "RaceChronoCanNotify", 4096, nullptr, PRIO_CAN_NOTIFY, nullptr);
+	// xTaskCreate(raceChronoGpsNotifyTask, "RaceChronoGpsNotify", 4096, nullptr, PRIO_BLE_GPS_NOTIFY, nullptr);
 }
 
 /**
