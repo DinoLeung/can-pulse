@@ -4,7 +4,8 @@
 
 A simple ESP32-based device that listens to and forwards CAN bus data from the 2022+ Toyota GR86 / Subaru BRZ (ZN8/ZD8).
 The goal is to make CAN bus data available in [RaceChrono](https://racechrono.com).
-It taps into the ASC unit (the “GazooKazoo”), which reads CAN data to produce fake engine noise. Many owners leave it unplugged anyway, we repurpose the data stream from there.
+
+The device taps into the ASC (“GazooKazoo”) connector, which passively listens to the vehicle CAN network to generate synthetic engine noise. Since this module is non-essential and commonly disconnected, it provides a convenient and non-invasive access point to the CAN bus.
 
 ## Motivation
 
