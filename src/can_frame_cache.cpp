@@ -88,30 +88,42 @@ bool updateCanFrameCache(uint32_t identifier, bool isExtended, uint8_t dlc, cons
 	}
 	entry->lastUpdatedMs = millis();
 	entry->valid = true;
+	entry->pendingNotify = true;
 
 	xSemaphoreGive(g_canFrameCache.mutex);
 	return true;
 }
 
 /**
- * @brief Retrieve the next cached CAN frame in allow-all mode.
+ * @brief Claim the next pending cached CAN frame in allow-all mode.
  *
  * Iterates through the cache in a round-robin fashion using the provided
- * cursor, returning the next valid cached frame. The cursor is advanced
- * to ensure fair traversal across all cached entries over time.
+ * cursor and selects the next entry that is both valid and marked
+ * `pendingNotify`.
+ *
+ * On selection, the frame data is copied to the output parameters and the
+ * entry's `pendingNotify` flag is cleared before returning. This implements a
+ * best-effort "claim on selection" model (latest-value semantics).
+ *
+ * The cursor is advanced to ensure fair traversal across all cached entries.
  *
  * The operation is protected by the cache mutex to ensure safe concurrent
- * access from multiple tasks.
+ * access from multiple tasks. The mutex is held only for the duration of
+ * selection and copy.
+ *
+ * @note If the subsequent BLE notify fails, the update may be lost because the
+ *       entry has already been claimed (pending flag cleared). This is
+ *       intentional for freshness-first behavior.
  *
  * @param cursor          In/out cursor used for round-robin traversal.
  * @param outFramePid     Output CAN identifier of the selected frame.
  * @param outFrameData    Output buffer (8 bytes) containing frame payload.
- * @return true if a valid frame was found and returned, false otherwise.
+ * @return true if a pending frame was found and claimed, false otherwise.
  */
 bool CanFrameCache::getNextCachedFrame(
 	size_t& cursor,
 	uint32_t& outFramePid,
-	uint8_t (&outFrameData)[8]) const {
+	uint8_t (&outFrameData)[8]) {
 	if (xSemaphoreTake(mutex, portMAX_DELAY) != pdTRUE) {
 		return false;
 	}
@@ -125,12 +137,13 @@ bool CanFrameCache::getNextCachedFrame(
 
 		for (size_t checked = 0; checked < count; ++checked) {
 			const size_t index = (cursor + checked) % count;
-			if (!entries[index].valid) {
+			if (!entries[index].valid || !entries[index].pendingNotify)
 				continue;
-			}
 
 			outFramePid = entries[index].identifier;
 			memcpy(outFrameData, entries[index].data, 8);
+			// mark cache entry seen
+			entries[index].pendingNotify = false;
 			cursor = (index + 1) % count;
 			found = true;
 			break;
@@ -142,28 +155,30 @@ bool CanFrameCache::getNextCachedFrame(
 }
 
 /**
- * @brief Retrieve the cached CAN frame for a requested PID.
+ * @brief Claim the cached CAN frame for a requested PID.
  *
- * Looks up the cache for a valid frame matching the requested PID and, if
- * found, copies the cached identifier and payload into the caller-provided
- * outputs.
+ * Searches the cache for a valid entry matching the requested PID that is
+ * marked `pendingNotify`. If found, copies the identifier and payload into
+ * the output parameters and clears the entry's `pendingNotify` flag.
  *
- * Due-time and round-robin scheduling decisions are handled by
- * `PidFilterState::nextDuePid()`. This function is only responsible for
- * cache lookup.
+ * Scheduling (e.g., round-robin or interval selection) is handled by the
+ * caller (e.g., PidFilterState). This function performs lookup + claim only.
  *
  * The operation is protected by the cache mutex to ensure safe concurrent
  * access from multiple tasks.
  *
+ * @note Uses best-effort "claim on selection" semantics. If the subsequent
+ *       BLE notify fails, the update may be dropped.
+ *
  * @param requestedPid   Requested PID to look up in the cache.
  * @param outFramePid    Output CAN identifier of the selected frame.
  * @param outFrameData   Output buffer (8 bytes) containing frame payload.
- * @return true if a matching cached frame was found and returned, false otherwise.
+ * @return true if a matching pending frame was found and claimed, false otherwise.
  */
 bool CanFrameCache::getNextRequestedCachedFrame(
 	const RequestedPid& requestedPid,
 	uint32_t& outFramePid,
-	uint8_t (&outFrameData)[8]) const {
+	uint8_t (&outFrameData)[8]) {
 	if (xSemaphoreTake(mutex, portMAX_DELAY) != pdTRUE) {
 		return false;
 	}
@@ -171,16 +186,15 @@ bool CanFrameCache::getNextRequestedCachedFrame(
 	bool found = false;
 
 	for (size_t cacheIndex = 0; cacheIndex < count; ++cacheIndex) {
-		if (!entries[cacheIndex].valid) {
-			continue;
-		}
+		if (!entries[cacheIndex].valid) continue;
 
-		if (entries[cacheIndex].identifier != requestedPid.pid) {
+		if (entries[cacheIndex].identifier != requestedPid.pid || !entries[cacheIndex].pendingNotify)
 			continue;
-		}
 
 		outFramePid = entries[cacheIndex].identifier;
 		memcpy(outFrameData, entries[cacheIndex].data, 8);
+		// mark cache entry seen
+		entries[cacheIndex].pendingNotify = false;
 		found = true;
 		break;
 	}

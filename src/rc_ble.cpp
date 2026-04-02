@@ -2,6 +2,7 @@
 #include <Arduino.h>
 #include <BLE2902.h>
 #include <BLEDevice.h>
+#include "esp_gatt_common_api.h"
 #include <freertos/queue.h>
 #include "rc_ble_helper.h"
 
@@ -123,6 +124,32 @@ bool initRaceChronoBle() {
 }
 
 /**
+ * @brief Check if a BLE notification can be sent immediately.
+ *
+ * This function verifies two conditions before allowing a notify operation:
+ *
+ * 1. A valid BLE connection is active.
+ * 2. The BLE stack has available transmit credits (ACL packets).
+ *
+ * The ESP32 BLE controller limits how many packets can be in-flight at any
+ * given time. `esp_ble_get_cur_sendable_packets_num()` exposes the remaining
+ * transmit credits for the current connection. When this reaches zero,
+ * additional notifications will fail or return errors.
+ *
+ * This function is intended to be used as a guard in high-frequency notify
+ * tasks (e.g. CAN or GPS streaming) to prevent:
+ * - BLE stack errors (e.g. "Unknown connection ID", L2CAP issues)
+ * - Overrunning the controller transmit buffer
+ *
+ * @return true if a notification can be sent right now, false otherwise.
+ */
+bool bleCanSendNotification() {
+    if (!g_rcBleConnected || g_rcBleConnId == kInvalidBleConnId) return false;
+    const uint16_t sendablePackets = esp_ble_get_cur_sendable_packets_num(g_rcBleConnId);
+    return sendablePackets > 0;
+}
+
+/**
  * @brief Create the primary RaceChrono BLE service.
  *
  * This helper allocates the GATT service that hosts the RaceChrono
@@ -237,50 +264,28 @@ static void startRaceChronoAdvertising() {
 }
 
 /**
- * @brief Mark a requested PID as having just been transmitted.
+ * @brief Select the next active requested PID using round-robin traversal.
  *
- * This updates the scheduling state for a specific requested PID by
- * advancing its `nextDueMs` based on its configured interval. The
- * operation is protected by the internal mutex to ensure consistency
- * when accessed from multiple FreeRTOS tasks.
+ * Iterates over the requested PID list starting from the current cursor
+ * position and returns the first PID marked as active. The search wraps
+ * around the list to ensure fair distribution across all requested PIDs.
  *
- * This function should be called by the notify task after a frame
- * corresponding to a requested PID has been sent to the client.
+ * This function does not perform any timing or interval checks. It simply
+ * selects the next active PID in a best-effort manner.
  *
- * @param index Index of the requested PID in the internal array.
- * @param now   Current time in milliseconds (typically from `millis()`).
- */
-void PidFilterState::markPidSent(size_t index, uint32_t now) {
-	if (xSemaphoreTake(mutex, portMAX_DELAY) != pdTRUE) {
-		return;
-	}
-
-	if (index < requestedPidCount) {
-		requestedPids[index].nextDueMs = now + requestedPids[index].intervalMs;
-	}
-
-	xSemaphoreGive(mutex);
-}
-
-/**
- * @brief Retrieve the next requested PID that is due for transmission.
+ * The internal mutex is held during traversal to ensure a consistent view
+ * of the requested PID list when accessed from multiple tasks.
  *
- * Performs a round-robin scan over the current requested PID list and
- * returns the first PID that is active and due based on its configured
- * `intervalMs` and `nextDueMs` values. The requested PID cursor is
- * advanced so subsequent calls continue from the next position.
- *
- * The operation is protected by the internal mutex to ensure a consistent
- * view of the request list when accessed from multiple FreeRTOS tasks.
- *
- * @param now                  Current time in milliseconds.
- * @param requestedPidCursor   In/out cursor for round-robin traversal.
+ * @param requestedPidCursor   In/out cursor for round-robin traversal. Will
+ *                             be advanced to the next position after a PID
+ *                             is selected.
  * @param outRequestedPid      Output copy of the selected requested PID.
- * @param outRequestedPidIndex Output index of the selected requested PID.
- * @return true if a due requested PID was found, false otherwise.
+ * @param outRequestedPidIndex Output index of the selected PID within the list.
+ *
+ * @return true if an active PID was found, false if none are active or the
+ *         list is empty.
  */
-bool PidFilterState::nextDuePid(
-	uint32_t now,
+bool PidFilterState::nextPid(
 	size_t& requestedPidCursor,
 	RequestedPid& outRequestedPid,
 	size_t& outRequestedPidIndex) const {
@@ -300,10 +305,6 @@ bool PidFilterState::nextDuePid(
 			const RequestedPid& requested = requestedPids[pidIndex];
 
 			if (!requested.active) {
-				continue;
-			}
-
-			if (requested.intervalMs > 0 && now < requested.nextDueMs) {
 				continue;
 			}
 

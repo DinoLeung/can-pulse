@@ -21,8 +21,6 @@ static constexpr size_t kFilterRequestQueueSize = 8;
 
 struct RequestedPid {
 	uint32_t pid;
-	uint16_t intervalMs;
-	uint32_t nextDueMs;
 	bool active;
 };
 
@@ -34,9 +32,8 @@ struct PidFilterState {
 	SemaphoreHandle_t mutex;
 	
 	void markPidSent(size_t index, uint32_t now);
-	
-	bool nextDuePid(
-		uint32_t now,
+
+	bool nextPid(
 		size_t& requestedPidCursor,
 		RequestedPid& outRequestedPid,
 		size_t& outRequestedPidIndex) const;
@@ -59,3 +56,4 @@ extern volatile bool g_rcBleConnected;
 extern uint16_t g_rcBleConnId;
 
 bool initRaceChronoBle();
+bool bleCanSendNotification();

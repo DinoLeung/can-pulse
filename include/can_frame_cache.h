@@ -21,6 +21,7 @@ struct CanFrameCacheEntry {
 	uint8_t data[8];
 	uint32_t lastUpdatedMs;
 	bool valid;
+	bool pendingNotify;
 };
 
 /**
@@ -31,7 +32,6 @@ struct CanFrameCacheEntry {
  * across multiple tasks.
  */
 struct CanFrameCache {
-	// static constexpr size_t capacity = 128;
 	CanFrameCacheEntry entries[kMaxCanFrameCacheSize];
 	size_t count;
 	SemaphoreHandle_t mutex;
@@ -39,12 +39,12 @@ struct CanFrameCache {
 	bool getNextCachedFrame(
 		size_t& cursor,
 		uint32_t& outFramePid,
-		uint8_t (&outFrameData)[8]) const;
+		uint8_t (&outFrameData)[8]);
 
 	bool getNextRequestedCachedFrame(
 		const RequestedPid& requestedPid,
 		uint32_t& outFramePid,
-		uint8_t (&outFrameData)[8]) const;
+		uint8_t (&outFrameData)[8]);
 };
 
 extern CanFrameCache g_canFrameCache;
