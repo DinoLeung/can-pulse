@@ -19,9 +19,11 @@ It’s also a practical exercise in understanding the vehicle’s CAN network an
 
 The basic firmware is complete and functional:
 - CAN frames are read from the vehicle bus.
-- Data is cached and filtered.
-- Frames are forwarded over BLE using the RaceChrono DIY device protocol.
-- Overall BLE notify rate ~350 Hz, with each CAN PID forwarded at near-native bus update rates on a best-effort basis
+- Frames are cached and served according to filter requests issued by RaceChrono.
+- Filter requests are driven by formulas configured in RaceChrono, allowing selective forwarding of relevant PIDs.
+- CAN frames are transmitted over BLE using the RaceChrono DIY device protocol.
+- BLE notifications are sent on a best effort, latest value basis, updated frames are sent once, without replaying stale data.
+- The system achieves an overall BLE notify rate of ~300 Hz, with individual PIDs delivered at close to their native bus update rates where possible.
 
 This means the device is already usable for real-time telemetry in RaceChrono.
 
