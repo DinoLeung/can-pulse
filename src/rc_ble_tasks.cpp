@@ -6,9 +6,6 @@
 #include "can_frame_cache.h"
 #include "gps_snapshot.h"
 
-// 25Hz
-constexpr TickType_t GpsNotifyInterval = pdMS_TO_TICKS(40);
-
 static void raceChronoCanFilterRequestTask(void*);
 static void raceChronoCanNotifyTask(void*);
 static void raceChronoGpsNotifyTask(void*);
@@ -231,7 +228,6 @@ static void raceChronoCanNotifyTask(void* pvParameters) {
  */
 static void raceChronoGpsNotifyTask(void* pvParameters) {
 	(void)pvParameters;
-	TickType_t lastWake = xTaskGetTickCount();
 	static uint8_t gpsSyncBits = 0;
 
 	while (true) {
@@ -243,21 +239,23 @@ static void raceChronoGpsNotifyTask(void* pvParameters) {
 		if (!bleCanSendNotification()) continue;
 
 		GpsSnapshot snapshot{};
-		getGpsSnapshot(snapshot);
-		const uint8_t currentSyncBits = static_cast<uint8_t>(gpsSyncBits & 0b111);
+		bool hasNext = getGpsSnapshot(snapshot);
 
-		uint8_t gpsTimePayload[3];
-		buildRcGpsTimePayload(currentSyncBits, snapshot, gpsTimePayload);
-		g_rcBleGpsTimeChar->setValue(gpsTimePayload, sizeof(gpsTimePayload));
-		
-		uint8_t gpsMainPayload[20];
-		buildRcGpsMainPayload(currentSyncBits, snapshot, gpsMainPayload);
-		g_rcBleGpsMainChar->setValue(gpsMainPayload, sizeof(gpsMainPayload));
-
-		g_rcBleGpsTimeChar->notify();
-		g_rcBleGpsMainChar->notify();
-
-		gpsSyncBits = static_cast<uint8_t>((gpsSyncBits + 1) & 0b111);
-		vTaskDelayUntil(&lastWake, GpsNotifyInterval);
+		if (hasNext) {
+			const uint8_t currentSyncBits = static_cast<uint8_t>(gpsSyncBits & 0b111);
+	
+			uint8_t gpsTimePayload[3];
+			buildRcGpsTimePayload(currentSyncBits, snapshot, gpsTimePayload);
+			g_rcBleGpsTimeChar->setValue(gpsTimePayload, sizeof(gpsTimePayload));
+			
+			uint8_t gpsMainPayload[20];
+			buildRcGpsMainPayload(currentSyncBits, snapshot, gpsMainPayload);
+			g_rcBleGpsMainChar->setValue(gpsMainPayload, sizeof(gpsMainPayload));
+	
+			g_rcBleGpsTimeChar->notify();
+			g_rcBleGpsMainChar->notify();
+	
+			gpsSyncBits = static_cast<uint8_t>((gpsSyncBits + 1) & 0b111);
+		}
 	}
 }

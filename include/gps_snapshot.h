@@ -37,8 +37,10 @@ struct GpsSnapshot {
 
 	bool vdopValid;
 	float vdop;
+
+	bool pendingNotify;
 };
 
 void initGpsSnapshot();
 void updateGpsSnapshot();
-void getGpsSnapshot(GpsSnapshot& out);
+bool getGpsSnapshot(GpsSnapshot& out);
