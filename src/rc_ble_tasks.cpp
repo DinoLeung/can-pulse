@@ -13,7 +13,7 @@ static void raceChronoGpsNotifyTask(void*);
 void startRaceChronoTasks() {
 	xTaskCreate(raceChronoCanFilterRequestTask, "RaceChronoCanFilterRequest", 4096, nullptr, 1, nullptr);
 	xTaskCreate(raceChronoCanNotifyTask, "RaceChronoCanNotify", 4096, nullptr, PRIO_CAN_NOTIFY, nullptr);
-	// xTaskCreate(raceChronoGpsNotifyTask, "RaceChronoGpsNotify", 4096, nullptr, PRIO_BLE_GPS_NOTIFY, nullptr);
+	xTaskCreate(raceChronoGpsNotifyTask, "RaceChronoGpsNotify", 4096, nullptr, PRIO_BLE_GPS_NOTIFY, nullptr);
 }
 
 /**
@@ -153,7 +153,10 @@ static void raceChronoCanNotifyTask(void* pvParameters) {
 			continue;
 		}
 
-		if (!bleCanSendNotification()) continue;
+		if (!bleCanSendNotification()) {
+			vTaskDelay(pdMS_TO_TICKS(1));
+			continue;
+		}
 
 		const uint32_t now = millis();
 		bool allowAll = false;
@@ -210,6 +213,7 @@ static void raceChronoCanNotifyTask(void* pvParameters) {
 			g_rcBleMainChar->setValue(payload, sizeof(payload));
 			g_rcBleMainChar->notify();
 		}
+		vTaskDelay(pdMS_TO_TICKS(1));
 	}
 }
 
@@ -228,34 +232,36 @@ static void raceChronoCanNotifyTask(void* pvParameters) {
  */
 static void raceChronoGpsNotifyTask(void* pvParameters) {
 	(void)pvParameters;
-	static uint8_t gpsSyncBits = 0;
-
 	while (true) {
 		if (!g_rcBleConnected || g_rcBleGpsMainChar == nullptr || g_rcBleGpsTimeChar == nullptr) {
-			vTaskDelay(pdMS_TO_TICKS(100));
+			vTaskDelay(pdMS_TO_TICKS(1000));
 			continue;
 		}
 
-		if (!bleCanSendNotification()) continue;
-
+		if (!bleCanSendNotification()) {
+			vTaskDelay(pdMS_TO_TICKS(1));
+			continue;
+		}
+		
 		GpsSnapshot snapshot{};
 		bool hasNext = getGpsSnapshot(snapshot);
-
-		if (hasNext) {
-			const uint8_t currentSyncBits = static_cast<uint8_t>(gpsSyncBits & 0b111);
-	
-			uint8_t gpsTimePayload[3];
-			buildRcGpsTimePayload(currentSyncBits, snapshot, gpsTimePayload);
-			g_rcBleGpsTimeChar->setValue(gpsTimePayload, sizeof(gpsTimePayload));
-			
-			uint8_t gpsMainPayload[20];
-			buildRcGpsMainPayload(currentSyncBits, snapshot, gpsMainPayload);
-			g_rcBleGpsMainChar->setValue(gpsMainPayload, sizeof(gpsMainPayload));
-	
-			g_rcBleGpsTimeChar->notify();
-			g_rcBleGpsMainChar->notify();
-	
-			gpsSyncBits = static_cast<uint8_t>((gpsSyncBits + 1) & 0b111);
+		
+		if (!hasNext) {
+			vTaskDelay(pdMS_TO_TICKS(1));
+			continue;
 		}
+				
+		uint8_t gpsTimePayload[3];
+		buildRcGpsTimePayload(snapshot, gpsTimePayload);
+		g_rcBleGpsTimeChar->setValue(gpsTimePayload, sizeof(gpsTimePayload));
+		
+		uint8_t gpsMainPayload[20];
+		buildRcGpsMainPayload(snapshot, gpsMainPayload);
+		g_rcBleGpsMainChar->setValue(gpsMainPayload, sizeof(gpsMainPayload));
+
+		g_rcBleGpsMainChar->notify();
+		// g_rcBleGpsTimeChar->notify();
+		
+		vTaskDelay(pdMS_TO_TICKS(1));
 	}
 }

@@ -9,11 +9,12 @@
 #include "freertos/task.h"
 
 constexpr uint32_t GPS_TASK_STACK_SIZE = 4096;
-constexpr TickType_t GPS_TASK_DELAY = pdMS_TO_TICKS(20);
+constexpr TickType_t GPS_TASK_DELAY = pdMS_TO_TICKS(1);
 
 static void readGpsTask(void*);
 
 void startGpsTasks() {
+	initGpsSnapshot();
 	xTaskCreate(readGpsTask, "GPS_Read", GPS_TASK_STACK_SIZE, NULL, PRIO_GPS_READ, NULL);
 }
 
@@ -25,7 +26,7 @@ void readGpsTask(void* pvParameters) {
 
 	while (true) {
 		bool sentenceCompleted = false;
-
+		
 		while (Serial1.available() > 0) {
 			if (g_gps.encode(static_cast<char>(Serial1.read()))) {
 				sentenceCompleted = true;

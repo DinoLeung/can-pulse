@@ -15,6 +15,8 @@ struct GpsSnapshot {
 	uint8_t month;
 	uint8_t day;
 
+	int8_t dateSyncBits = 0;
+
 	bool locationValid;
 	double latitudeDeg;
 	double longitudeDeg;
@@ -30,7 +32,7 @@ struct GpsSnapshot {
 	double courseDeg;
 
 	bool satellitesValid;
-	uint32_t satellites;
+	uint8_t satellites;
 
 	bool hdopValid;
 	float hdop;

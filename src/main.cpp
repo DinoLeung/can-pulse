@@ -9,14 +9,17 @@
 #include "rc_ble_tasks.h"
 
 void setup() {
+	Serial.begin(115200);
+	delay(1000);
+
 	initCanFrameCache();
 
 	initCanBus();
-	// initGps();
+	initGps();
 	initRaceChronoBle();
 	
 	startCanTasks();
-	// startGpsTasks();
+	startGpsTasks();
 	// startSensorTasks();
 	startRaceChronoTasks();
 }

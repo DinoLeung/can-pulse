@@ -177,7 +177,7 @@ void buildRcCanMainPayload(uint32_t framePid, const uint8_t* frameData, uint8_t*
  * @param gps Snapshot of GPS data.
  * @param outPayload Output buffer of at least 20 bytes.
  */
-void buildRcGpsMainPayload(uint8_t syncBits, const GpsSnapshot& gps, uint8_t* outPayload) {
+void buildRcGpsMainPayload(const GpsSnapshot& gps, uint8_t* outPayload) {
 	memset(outPayload, 0, 20);
 
 	// Byte 0-2: Sync bits* (3 bits) and time from hour start (21 bits = (minute * 30000) + (seconds * 500) + (milliseconds / 2))
@@ -192,18 +192,17 @@ void buildRcGpsMainPayload(uint8_t syncBits, const GpsSnapshot& gps, uint8_t* ou
 	}
 
 	const uint32_t timeField =
-		((static_cast<uint32_t>(syncBits) & 0b111) << 21) |
+		((static_cast<uint32_t>(gps.dateSyncBits) & 0b111) << 21) |
 		(timeFromHour & 0x1FFFFF);
 
 	writeBe24(timeField, outPayload);
 	
 	// Byte 3: Fix quality (2 bits), locked satellites (6 bits, invalid value 0x3F)
 	uint8_t fixQuality = 0;
+	uint8_t satellitesField = 0x3F;
 	if (gps.locationValid) {
 		fixQuality = encodeRcFixQuality(gps.fixQuality);
 	}
-
-	uint8_t satellitesField = 0x3F;
 	if (gps.satellitesValid) {
 		satellitesField = std::min<uint8_t>(gps.satellites, 0b111111);
 	}
@@ -211,18 +210,17 @@ void buildRcGpsMainPayload(uint8_t syncBits, const GpsSnapshot& gps, uint8_t* ou
 
 	// Byte 4-7: Latitude in (degrees * 10_000_000), signed 2's complement, invalid value 0x7FFFFFFF
 	// Byte 8-11: Longitude in (degrees * 10_000_000), signed 2's complement, invalid value 0x7FFFFFFF
+	int32_t lat = 0x7FFFFFFF;
+	int32_t lon = 0x7FFFFFFF;
 	if (gps.locationValid &&
 	    std::isfinite(gps.latitudeDeg) &&
 	    std::isfinite(gps.longitudeDeg)) {
 		const double scale = 10000000.0;
-		const int32_t lat = static_cast<int32_t>(lround(gps.latitudeDeg * scale));
-		const int32_t lon = static_cast<int32_t>(lround(gps.longitudeDeg * scale));
-		writeBe32(lat, &outPayload[4]);
-		writeBe32(lon, &outPayload[8]);
-	} else {
-		writeBe32(0x7FFFFFFF, &outPayload[4]);
-		writeBe32(0x7FFFFFFF, &outPayload[8]);
+		lat = static_cast<int32_t>(lround(gps.latitudeDeg * scale));
+		lon = static_cast<int32_t>(lround(gps.longitudeDeg * scale));
 	}
+	writeBe32(lat, &outPayload[4]);
+	writeBe32(lon, &outPayload[8]);
 
 	// Byte 12-13: Altitude (((meters + 500) * 10) & 0x7FFF) or (((meters + 500) & 0x7FFF) | 0x8000), invalid value 0xFFFF
 	uint16_t altitudeField = 0xFFFF;
@@ -280,10 +278,10 @@ void buildRcGpsMainPayload(uint8_t syncBits, const GpsSnapshot& gps, uint8_t* ou
  * @param gps Snapshot containing date/time fields.
  * @param outPayload Output buffer of at least 3 bytes.
  */
-void buildRcGpsTimePayload(uint8_t syncBits, const GpsSnapshot& gps, uint8_t* outPayload) {
+void buildRcGpsTimePayload(const GpsSnapshot& gps, uint8_t* outPayload) {
 	memset(outPayload, 0, 3);
 
-	const uint32_t syncField = (static_cast<uint32_t>(syncBits) & 0b111U) << 21;
+	const uint32_t syncField = (static_cast<uint32_t>(gps.dateSyncBits) & 0b111U) << 21;
 
 	if (!gps.dateValid || !gps.timeValid) {
 		writeBe24(syncField, outPayload);
