@@ -46,6 +46,7 @@ void updateGpsSnapshot() {
 	
     GpsSnapshot next = gpsSnapshot;
 
+	const bool prevDateValid = gpsSnapshot.dateValid;
     const uint16_t prevYear = gpsSnapshot.year;
     const uint8_t prevMonth = gpsSnapshot.month;
     const uint8_t prevDay = gpsSnapshot.day;
@@ -113,10 +114,12 @@ void updateGpsSnapshot() {
 
 	// Sync byte increments when time coarser than minute
 	// https://github.com/aollin/racechrono-ble-diy-device?tab=readme-ov-file#gps-time-characteristic-uuid-0x0004
-	if (next.hour != prevHour ||
+	if (next.timeValid && next.dateValid &&
+		(!prevTimeValid || !prevDateValid ||
+		next.hour != prevHour ||
 		next.day != prevDay ||
 		next.month != prevMonth ||
-		next.year != prevYear) {
+		next.year != prevYear)) {
 			next.dateSyncBits = incrementDateSyncBits(next.dateSyncBits);
 		}
 
