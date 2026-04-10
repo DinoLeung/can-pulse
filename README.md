@@ -13,30 +13,29 @@ RaceChrono supports [DIY BLE CAN devices](https://github.com/aollin/racechrono-b
 
 It’s also a practical exercise in understanding the vehicle’s CAN network and building something that is both functional and extensible, rather than a black box.
 
-## Roadmap
+## Feature
 
-### Current Status
+### Real-time CAN ingestion
+Continuously reads CAN frames from the vehicle bus via the ASC connector.
 
-The basic firmware is complete and functional:
-- CAN frames are read from the vehicle bus.
-- Frames are cached and served according to filter requests issued by RaceChrono.
-- Filter requests are driven by formulas configured in RaceChrono, allowing selective forwarding of relevant PIDs.
-- CAN frames are transmitted over BLE using the RaceChrono DIY device protocol.
-- BLE notifications are sent on a best effort, latest value basis, updated frames are sent once, without replaying stale data.
-- The system achieves an overall BLE notify rate of ~300 Hz, with individual PIDs delivered at close to their native bus update rates where possible.
+### Adaptive PID filtering
+Dynamically responds to RaceChrono filter requests, serving only the required signals.
 
-This means the device is already usable for real-time telemetry in RaceChrono.
+### Efficient BLE transport
+Streams CAN data over BLE using the RaceChrono DIY device protocol.
+### High-throughput notifications
 
-### Next Step: High-Rate GPS Integration
+Achieves an aggregate BLE notify rate of ~300 Hz, balancing bandwidth across active signals.
 
-The next major milestone is adding high-frequency GPS data support using the [ASL GPS bolt-on](https://wiki.autosportlabs.com/Gps-bolt-on)
+### Near-native signal rates
+Individual PIDs are delivered at or close to their original CAN bus update frequencies.
 
-Planned capabilities:
-- Integrate GPS data alongside CAN telemetry.
-- 10-25 Hz GPS update rate(vs typical phone GPS at 1 Hz)
-- Improve lap timing accuracy and track position fidelity.
+### Latest-value delivery model
+Prioritises fresh data — each frame is sent once, avoiding replay of stale values.
 
-Longer term, this will allow the device to act as a complete standalone telemetry unit, rather than relying on the phone for positioning data.
+### Integrated high-rate GPS
+Provides GPS data at up to 50 Hz, significantly outperforming typical phone-based GPS (~1 Hz).
+
 
 ## Hardware
 
