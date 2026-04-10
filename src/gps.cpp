@@ -75,14 +75,14 @@ void configureSkytraqUpdateRate(uint8_t rateHz) {
  * commands at its current baud rate. Skipping the initial 9600 step will
  * result in the GPS ignoring configuration commands.
  */
-void initGps() {
+bool initGps() {
     Serial1.begin(GPS_INITIAL_BAUD, SERIAL_8N1, GPS_UART_RX_PIN, GPS_UART_TX_PIN);
     configureSkytraqBaudRate(SKYTRAQ_BAUD_CODE_115200);
     delay(1000);
     
     Serial1.begin(GPS_OPERATING_BAUD, SERIAL_8N1, GPS_UART_RX_PIN, GPS_UART_TX_PIN);
     configureSkytraqUpdateRate(GPS_UPDATE_RATE);
-    delay(1000);
 
     Serial.println("GPS ready");
+    return true;
 }

@@ -19,8 +19,8 @@ static bool initCan1();
 static bool initCan2();
 
 bool initCanBus() {
-	Serial.begin(115200);
-	return initCan1() && initCan2();
+	// return initCan1() && initCan2();
+	return initCan1();
 }
 
 /**

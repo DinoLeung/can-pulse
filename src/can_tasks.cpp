@@ -11,6 +11,7 @@ static void readCan1EnqueueTask(void*);
 static void forwardCan1ToCan2Task(void*);
 
 void startCanTasks() {
+	initCanFrameCache();
 	// messageQueue = xQueueCreate(16, sizeof(twai_message_t));
 	xTaskCreate(readCan1EnqueueTask, "CAN1_Read", 4096, NULL, 1, NULL);
 	// xTaskCreate(forwardCan1ToCan2Task, "CAN1_Forward", 4096, NULL, 1, NULL);

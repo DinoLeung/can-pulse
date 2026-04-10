@@ -12,4 +12,4 @@ static constexpr uint32_t GPS_UPDATE_RATE = 50;
 extern TinyGPSPlus g_gps;
 extern TinyGPSCustom g_vdop;
 
-void initGps();
+bool initGps();

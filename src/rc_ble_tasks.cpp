@@ -213,7 +213,6 @@ static void raceChronoCanNotifyTask(void* pvParameters) {
 			g_rcBleMainChar->setValue(payload, sizeof(payload));
 			g_rcBleMainChar->notify();
 		}
-		vTaskDelay(pdMS_TO_TICKS(1));
 	}
 }
 
@@ -261,7 +260,5 @@ static void raceChronoGpsNotifyTask(void* pvParameters) {
 
 		g_rcBleGpsMainChar->notify();
 		// g_rcBleGpsTimeChar->notify();
-		
-		vTaskDelay(pdMS_TO_TICKS(1));
 	}
 }
