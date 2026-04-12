@@ -243,7 +243,8 @@ static void raceChronoGpsNotifyTask(void* pvParameters) {
 		}
 		
 		GpsSnapshot snapshot{};
-		bool hasNext = getGpsSnapshot(snapshot);
+		int8_t syncBits;
+		bool hasNext = g_gpsSnapshotStore.get(snapshot, syncBits);
 		
 		if (!hasNext) {
 			vTaskDelay(pdMS_TO_TICKS(1));
@@ -251,11 +252,11 @@ static void raceChronoGpsNotifyTask(void* pvParameters) {
 		}
 				
 		uint8_t gpsTimePayload[3];
-		buildRcGpsTimePayload(snapshot, gpsTimePayload);
+		buildRcGpsTimePayload(snapshot, syncBits, gpsTimePayload);
 		g_rcBleGpsTimeChar->setValue(gpsTimePayload, sizeof(gpsTimePayload));
 		
 		uint8_t gpsMainPayload[20];
-		buildRcGpsMainPayload(snapshot, gpsMainPayload);
+		buildRcGpsMainPayload(snapshot, syncBits, gpsMainPayload);
 		g_rcBleGpsMainChar->setValue(gpsMainPayload, sizeof(gpsMainPayload));
 
 		g_rcBleGpsMainChar->notify();

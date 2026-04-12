@@ -32,7 +32,7 @@ void readGpsTask(void* pvParameters) {
 			}
 		}
 		if (sentenceCompleted) {
-			updateGpsSnapshot();
+			g_gpsSnapshotStore.update();
 		}
 
 		vTaskDelay(pdMS_TO_TICKS(1));

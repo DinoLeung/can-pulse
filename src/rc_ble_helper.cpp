@@ -173,11 +173,11 @@ void buildRcCanMainPayload(uint32_t framePid, const uint8_t* frameData, uint8_t*
  * - All fields are validated; invalid or non-finite inputs are encoded using
  *   the protocol-defined sentinel values.
  *
- * @param syncBits 3-bit synchronization counter (0..7).
  * @param gps Snapshot of GPS data.
+ * @param syncBits 3-bit synchronization counter (0..7).
  * @param outPayload Output buffer of at least 20 bytes.
  */
-void buildRcGpsMainPayload(const GpsSnapshot& gps, uint8_t* outPayload) {
+void buildRcGpsMainPayload(const GpsSnapshot& gps, const int8_t syncBits, uint8_t* outPayload) {
 	memset(outPayload, 0, 20);
 
 	// Byte 0-2: Sync bits* (3 bits) and time from hour start (21 bits = (minute * 30000) + (seconds * 500) + (milliseconds / 2))
@@ -192,7 +192,7 @@ void buildRcGpsMainPayload(const GpsSnapshot& gps, uint8_t* outPayload) {
 	}
 
 	const uint32_t timeField =
-		((static_cast<uint32_t>(gps.dateSyncBits) & 0b111) << 21) |
+		((static_cast<uint32_t>(syncBits) & 0b111) << 21) |
 		(timeFromHour & 0x1FFFFF);
 
 	writeBe24(timeField, outPayload);
@@ -274,14 +274,14 @@ void buildRcGpsMainPayload(const GpsSnapshot& gps, uint8_t* outPayload) {
  * - If date/time is invalid or out of range, only sync bits are emitted.
  * - Output is written in big-endian byte order.
  *
- * @param syncBits 3-bit synchronization counter (0..7).
  * @param gps Snapshot containing date/time fields.
+ * @param syncBits 3-bit synchronization counter (0..7).
  * @param outPayload Output buffer of at least 3 bytes.
  */
-void buildRcGpsTimePayload(const GpsSnapshot& gps, uint8_t* outPayload) {
+void buildRcGpsTimePayload(const GpsSnapshot& gps, const int8_t syncBits, uint8_t* outPayload) {
 	memset(outPayload, 0, 3);
 
-	const uint32_t syncField = (static_cast<uint32_t>(gps.dateSyncBits) & 0b111U) << 21;
+	const uint32_t syncField = (static_cast<uint32_t>(syncBits) & 0b111U) << 21;
 
 	if (!gps.dateValid || !gps.timeValid) {
 		writeBe24(syncField, outPayload);

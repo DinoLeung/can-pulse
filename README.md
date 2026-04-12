@@ -14,7 +14,7 @@ This project was originally developed for the 2022+ Toyota GR86 / Subaru BRZ (ZN
 
 The device taps into the ASC (Active Sound Control, “GazooKazoo”) connector, which passively listens to the vehicle CAN network to generate synthetic engine sound. Since this module is non-essential and commonly disconnected, it provides a convenient and non-invasive access point to the CAN bus.
 
-RaceChrono supports [DIY BLE CAN devices](https://github.com/aollin/racechrono-ble-diy-device), 
+RaceChrono supports [DIY BLE CAN devices](https://github.com/aollin/racechrono-ble-diy-device), which made it possible to build a custom telemetry pipeline tailored to the vehicle and signals of interest.
 
 It is also a practical exercise in understanding automotive CAN networks and building something functional, transparent, and extensible rather than relying on closed black-box hardware.
 

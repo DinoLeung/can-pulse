@@ -5,8 +5,7 @@
 
 #include "gps.h"
 
-static GpsSnapshot gpsSnapshot;
-static SemaphoreHandle_t mutex;
+GpsSnapshotStore g_gpsSnapshotStore;
 
 /**
  * @brief Initializes the GPS snapshot subsystem.
@@ -15,8 +14,8 @@ static SemaphoreHandle_t mutex;
  * synchronized across tasks. Safe to call multiple times.
  */
 void initGpsSnapshot() {
-	if (mutex == nullptr) {
-		mutex = xSemaphoreCreateMutex();
+	if (g_gpsSnapshotStore.mutex == nullptr) {
+		g_gpsSnapshotStore.mutex = xSemaphoreCreateMutex();
 	}
 }
 
@@ -58,7 +57,7 @@ bool parseVdop(float& out) {
  * @param syncBits Current sync counter value.
  * @return Next counter value wrapped to 3 bits.
  */
-int8_t incrementDateSyncBits(int8_t syncBits) {
+int8_t incrementSyncBits(int8_t syncBits) {
 	return static_cast<uint8_t>((syncBits + 1) & 0b111);
 }
 
@@ -69,116 +68,115 @@ int8_t incrementDateSyncBits(int8_t syncBits) {
  * not valid, updates RaceChrono sync state, and marks the snapshot pending when
  * time data has advanced so a new BLE notification can be sent.
  */
-void updateGpsSnapshot() {
+void GpsSnapshotStore::update() {
     if (mutex == nullptr)
 		return;
 	
 	if (xSemaphoreTake(mutex, portMAX_DELAY) != pdTRUE)
 		return;
-	
-    GpsSnapshot next = gpsSnapshot;
 
-	const bool prevDateValid = gpsSnapshot.dateValid;
-    const uint16_t prevYear = gpsSnapshot.year;
-    const uint8_t prevMonth = gpsSnapshot.month;
-    const uint8_t prevDay = gpsSnapshot.day;
-	const bool prevTimeValid = gpsSnapshot.timeValid;
-    const uint8_t prevHour = gpsSnapshot.hour;
-    const uint8_t prevMinute = gpsSnapshot.minute;
-    const uint8_t prevSecond = gpsSnapshot.second;
-    const uint16_t prevMs = gpsSnapshot.milliseconds;
+	const bool prevDateValid = snapshot.dateValid;
+    const uint16_t prevYear = snapshot.year;
+    const uint8_t prevMonth = snapshot.month;
+    const uint8_t prevDay = snapshot.day;
+	const bool prevTimeValid = snapshot.timeValid;
+    const uint8_t prevHour = snapshot.hour;
+    const uint8_t prevMinute = snapshot.minute;
+    const uint8_t prevSecond = snapshot.second;
+    const uint16_t prevMs = snapshot.milliseconds;
 	
-	next.timeValid = g_gps.time.isValid();
-	if (next.timeValid) {
-		next.hour = g_gps.time.hour();
-		next.minute = g_gps.time.minute();
-		next.second = g_gps.time.second();
-		next.milliseconds = g_gps.time.centisecond() * 10;
+	snapshot.timeValid = g_gps.time.isValid();
+	if (snapshot.timeValid) {
+		snapshot.hour = g_gps.time.hour();
+		snapshot.minute = g_gps.time.minute();
+		snapshot.second = g_gps.time.second();
+		snapshot.milliseconds = g_gps.time.centisecond() * 10;
 	}
 	
-	next.dateValid = g_gps.date.isValid();
-	if (next.dateValid) {
-		next.year = g_gps.date.year();
-		next.month = g_gps.date.month();
-		next.day = g_gps.date.day();
+	snapshot.dateValid = g_gps.date.isValid();
+	if (snapshot.dateValid) {
+		snapshot.year = g_gps.date.year();
+		snapshot.month = g_gps.date.month();
+		snapshot.day = g_gps.date.day();
 	}
 
-	next.locationValid = g_gps.location.isValid();
-	if (next.locationValid) {
-		next.latitudeDeg = g_gps.location.lat();
-		next.longitudeDeg = g_gps.location.lng();
+	snapshot.locationValid = g_gps.location.isValid();
+	if (snapshot.locationValid) {
+		snapshot.latitudeDeg = g_gps.location.lat();
+		snapshot.longitudeDeg = g_gps.location.lng();
 	}
 
-	if (next.locationValid) {
-		next.fixQuality = g_gps.location.FixQuality();
+	if (snapshot.locationValid) {
+		snapshot.fixQuality = g_gps.location.FixQuality();
 	}
 
-	next.altitudeValid = g_gps.altitude.isValid();
-	if (next.altitudeValid) {
-		next.altitudeMeters = g_gps.altitude.meters();
+	snapshot.altitudeValid = g_gps.altitude.isValid();
+	if (snapshot.altitudeValid) {
+		snapshot.altitudeMeters = g_gps.altitude.meters();
 	}
 
-	next.speedValid = g_gps.speed.isValid();
-	if (next.speedValid) {
-		next.speedKmh = g_gps.speed.kmph();
+	snapshot.speedValid = g_gps.speed.isValid();
+	if (snapshot.speedValid) {
+		snapshot.speedKmh = g_gps.speed.kmph();
 	}
 
-	next.courseValid = g_gps.course.isValid();
-	if (next.courseValid) {
-		next.courseDeg = g_gps.course.deg();
+	snapshot.courseValid = g_gps.course.isValid();
+	if (snapshot.courseValid) {
+		snapshot.courseDeg = g_gps.course.deg();
 	}
 
-	next.satellitesValid = g_gps.satellites.isValid();
-	if (next.satellitesValid) {
-		next.satellites = g_gps.satellites.value();
+	snapshot.satellitesValid = g_gps.satellites.isValid();
+	if (snapshot.satellitesValid) {
+		snapshot.satellites = g_gps.satellites.value();
 	}
 
-	next.hdopValid = g_gps.hdop.isValid();
-	if (next.hdopValid) {
-		next.hdop = g_gps.hdop.hdop();
+	snapshot.hdopValid = g_gps.hdop.isValid();
+	if (snapshot.hdopValid) {
+		snapshot.hdop = g_gps.hdop.hdop();
 	}
 
 	float vdop = 0.0f;
 	if (parseVdop(vdop)) {
-		next.vdopValid = true;
-		next.vdop = vdop;
+		snapshot.vdopValid = true;
+		snapshot.vdop = vdop;
 	}
 
 	// Sync byte increments when time coarser than minute
 	// https://github.com/aollin/racechrono-ble-diy-device?tab=readme-ov-file#gps-time-characteristic-uuid-0x0004
-	if (next.timeValid && next.dateValid &&
+	if (snapshot.timeValid && snapshot.dateValid &&
 		(!prevTimeValid || !prevDateValid ||
-		next.hour != prevHour ||
-		next.day != prevDay ||
-		next.month != prevMonth ||
-		next.year != prevYear)) {
-			next.dateSyncBits = incrementDateSyncBits(next.dateSyncBits);
+		snapshot.hour != prevHour ||
+		snapshot.day != prevDay ||
+		snapshot.month != prevMonth ||
+		snapshot.year != prevYear)) {
+			syncBits = incrementSyncBits(syncBits);
 		}
 
-	next.pendingNotify =
-        next.timeValid &&
+	pendingNotify =
+        snapshot.timeValid &&
         (!prevTimeValid ||
-         next.hour != prevHour ||
-         next.minute != prevMinute ||
-         next.second != prevSecond ||
-         next.milliseconds != prevMs);
+         snapshot.hour != prevHour ||
+         snapshot.minute != prevMinute ||
+         snapshot.second != prevSecond ||
+         snapshot.milliseconds != prevMs);
 	
-	gpsSnapshot = next;
 	xSemaphoreGive(mutex);
 }
 
 /**
- * @brief Retrieves the latest pending GPS snapshot.
+ * @brief Retrieves the latest pending GPS snapshot and RaceChrono sync state.
  *
  * Returns a copy of the cached snapshot only when new time-based data is marked
- * pending. Once returned, the pending flag is cleared so the same snapshot is
- * not sent repeatedly.
+ * pending. When successful, the current date sync bits are also returned for
+ * GPS time characteristic encoding. Once returned, the pending flag is cleared
+ * so the same snapshot is not sent repeatedly.
  *
- * @param out Receives the latest snapshot when available.
+ * @param out_snapshot Receives the latest snapshot when available.
+ * @param out_syncBits Receives the current 3-bit RaceChrono date sync counter.
  * @return true when a new snapshot was returned.
- * @return false when no new snapshot is pending or the subsystem is not ready.
+ * @return false when no new snapshot is pending or the store is not ready.
  */
-bool getGpsSnapshot(GpsSnapshot& out) {
+bool GpsSnapshotStore::get(GpsSnapshot& o_snapshot, int8_t& o_syncBits) {
 	if (mutex == nullptr)
 		return false;
 
@@ -187,10 +185,11 @@ bool getGpsSnapshot(GpsSnapshot& out) {
 
 	bool updated = false;
 
-	if (gpsSnapshot.pendingNotify == true) {
-		out = gpsSnapshot;
+	if (pendingNotify == true) {
+		o_snapshot = snapshot;
+		o_syncBits = syncBits;
 		updated = true;
-		gpsSnapshot.pendingNotify = false;
+		pendingNotify = false;
 	}
 		
 	xSemaphoreGive(mutex);
