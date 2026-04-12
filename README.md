@@ -2,16 +2,22 @@
 
 ## Overview
 
-A simple ESP32-based device that listens to and forwards CAN bus data from the 2022+ Toyota GR86 / Subaru BRZ (ZN8/ZD8).
-The goal is to make CAN bus data available in [RaceChrono](https://racechrono.com).
+A simple ESP32-based device that listens to vehicle CAN bus traffic and forwards selected telemetry data to external apps over Bluetooth Low Energy (BLE). It can also integrate an external GPS receiver for position, speed, heading, and timing data.
+The primary target is [RaceChrono](https://racechrono.com), using its DIY BLE CAN device protocol, but the platform can be extended for other telemetry and logging uses.
 
-The device taps into the ASC (“GazooKazoo”) connector, which passively listens to the vehicle CAN network to generate synthetic engine noise. Since this module is non-essential and commonly disconnected, it provides a convenient and non-invasive access point to the CAN bus.
+Designed as a lightweight embedded bridge, the device focuses on low-latency signal delivery, configurable data forwarding, and optional high-rate GPS integration. With supported modules, GPS update rates can significantly exceed those commonly seen on smartphones, improving track mapping and speed accuracy.
+
 
 ## Motivation
 
-RaceChrono supports [DIY BLE CAN devices](https://github.com/aollin/racechrono-ble-diy-device), which opens the door to building a fully custom telemetry pipeline. Instead of relying on off-the-shelf hardware, this project aims to create a lightweight, purpose-built device that integrates cleanly with the car and exposes exactly the data needed.
+This project was originally developed for the 2022+ Toyota GR86 / Subaru BRZ (ZN8/ZD8) platform.
 
-It’s also a practical exercise in understanding the vehicle’s CAN network and building something that is both functional and extensible, rather than a black box.
+The device taps into the ASC (Active Sound Control, “GazooKazoo”) connector, which passively listens to the vehicle CAN network to generate synthetic engine sound. Since this module is non-essential and commonly disconnected, it provides a convenient and non-invasive access point to the CAN bus.
+
+RaceChrono supports [DIY BLE CAN devices](https://github.com/aollin/racechrono-ble-diy-device), 
+
+It is also a practical exercise in understanding automotive CAN networks and building something functional, transparent, and extensible rather than relying on closed black-box hardware.
+
 
 ## Feature
 

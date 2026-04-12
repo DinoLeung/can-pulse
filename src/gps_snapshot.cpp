@@ -8,12 +8,28 @@
 static GpsSnapshot gpsSnapshot;
 static SemaphoreHandle_t mutex;
 
+/**
+ * @brief Initializes the GPS snapshot subsystem.
+ *
+ * Creates the module mutex on first call so snapshot reads and writes can be
+ * synchronized across tasks. Safe to call multiple times.
+ */
 void initGpsSnapshot() {
 	if (mutex == nullptr) {
 		mutex = xSemaphoreCreateMutex();
 	}
 }
 
+/**
+ * @brief Parses the current VDOP value from the GPS custom field.
+ *
+ * Validates that a VDOP string is present, converts it to float, and rejects
+ * empty, infinite, or negative values.
+ *
+ * @param out Receives the parsed VDOP when successful.
+ * @return true when a valid VDOP value was parsed.
+ * @return false when no valid VDOP value is available.
+ */
 bool parseVdop(float& out) {
 	if (!g_vdop.isValid()) {
 		return false;

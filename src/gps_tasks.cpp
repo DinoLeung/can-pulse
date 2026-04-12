@@ -9,7 +9,6 @@
 #include "freertos/task.h"
 
 constexpr uint32_t GPS_TASK_STACK_SIZE = 4096;
-constexpr TickType_t GPS_TASK_DELAY = pdMS_TO_TICKS(1);
 
 static void readGpsTask(void*);
 
@@ -36,6 +35,6 @@ void readGpsTask(void* pvParameters) {
 			updateGpsSnapshot();
 		}
 
-		vTaskDelay(GPS_TASK_DELAY);
+		vTaskDelay(pdMS_TO_TICKS(1));
 	}
 }
