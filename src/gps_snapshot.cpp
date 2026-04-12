@@ -49,10 +49,26 @@ bool parseVdop(float& out) {
 	return true;
 }
 
+/**
+ * @brief Advances the RaceChrono GPS date sync counter.
+ *
+ * The counter is a 3-bit rolling field used by the GPS time characteristic to
+ * signal coarse date or hour changes.
+ *
+ * @param syncBits Current sync counter value.
+ * @return Next counter value wrapped to 3 bits.
+ */
 int8_t incrementDateSyncBits(int8_t syncBits) {
 	return static_cast<uint8_t>((syncBits + 1) & 0b111);
 }
 
+/**
+ * @brief Refreshes the cached GPS snapshot from the latest parser state.
+ *
+ * Reads currently available GPS fields, preserves prior values when fields are
+ * not valid, updates RaceChrono sync state, and marks the snapshot pending when
+ * time data has advanced so a new BLE notification can be sent.
+ */
 void updateGpsSnapshot() {
     if (mutex == nullptr)
 		return;
@@ -151,6 +167,17 @@ void updateGpsSnapshot() {
 	xSemaphoreGive(mutex);
 }
 
+/**
+ * @brief Retrieves the latest pending GPS snapshot.
+ *
+ * Returns a copy of the cached snapshot only when new time-based data is marked
+ * pending. Once returned, the pending flag is cleared so the same snapshot is
+ * not sent repeatedly.
+ *
+ * @param out Receives the latest snapshot when available.
+ * @return true when a new snapshot was returned.
+ * @return false when no new snapshot is pending or the subsystem is not ready.
+ */
 bool getGpsSnapshot(GpsSnapshot& out) {
 	if (mutex == nullptr)
 		return false;
