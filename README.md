@@ -48,6 +48,38 @@ Provides GPS data at up to 50 Hz, significantly outperforming typical phone-base
 ### [ASL ESP-CAN-X2](https://wiki.autosportlabs.com/ESP32-CAN-X2)
 ### [ASL Gps-bolt-on](https://wiki.autosportlabs.com/Gps-bolt-on)
 
+## Sounds pretty neat, how do I make my own?
+
+### Assembly
+
+1. Assemble the hardware following the Autosport Labs guides for the ESP32-CAN-X2 and GPS Bolt-on modules.
+1. Use an extension cable between the GPS module and bolt-on board so the GPS receiver can be mounted on the dashboard or another location with clear sky visibility.
+1. Connect the `X1` JST-PH 4-pin header to vehicle CAN High, CAN Low, 12V power, and ground.
+1. Powering from an ignition-switched source is recommended so the device turns on only when the vehicle is in accessory or running mode.
+
+### Flashing the firmware
+
+1. Install [PlatformIO CLI](https://platformio.org/install/cli) or [PlatformIO IDE](https://platformio.org/install/ide).
+1. Clone this repository.
+1. From the project directory, run:
+   ```bash
+   platformio run --target upload --environment esp32-can-x2
+   ```
+
+### Connecting to RaceChrono
+1. Power on the device.
+1. In RaceChrono, open `Settings` -> `Other devices` -> `Add other device`
+1. Select `RaceChrono DIY` from the list, then `Bluetooth LE`.
+1. Make sure the device is turned on, tap `Search for devices in range`.
+1. Select `CAN Pulse BLE`, check the options `GPS` and `CAN-Bus`, tap `ok` to connect.
+1. If `CAN Pulse BLE` does not appear, unplug the device from its power source and start again.
+
+### Vehicle integration notes
+
+- CAN bus pinout, connector location, and available power sources vary by vehicle.
+- Always verify wiring before connecting the device.
+- If unsupported CAN transceivers or constant battery power are used incorrectly, battery drain or communication faults may occur.
+
 ## References
 
 This project is heavily based on reverse engineering work documented by the community, in particular:
