@@ -10,10 +10,10 @@ static void raceChronoCanFilterRequestTask(void*);
 static void raceChronoCanNotifyTask(void*);
 static void raceChronoGpsNotifyTask(void*);
 
-void startRaceChronoTasks() {
-	xTaskCreate(raceChronoCanFilterRequestTask, "RaceChronoCanFilterRequest", 4096, nullptr, 1, nullptr);
-	xTaskCreate(raceChronoCanNotifyTask, "RaceChronoCanNotify", 4096, nullptr, PRIO_CAN_NOTIFY, nullptr);
-	xTaskCreate(raceChronoGpsNotifyTask, "RaceChronoGpsNotify", 4096, nullptr, PRIO_BLE_GPS_NOTIFY, nullptr);
+void startRaceChronoTasks(BaseType_t xCoreID) {
+	xTaskCreatePinnedToCore(raceChronoCanFilterRequestTask, "RaceChronoCanFilterRequest", 4096, nullptr, PRIO_BLE_CAN_FILTER, nullptr, xCoreID);
+	xTaskCreatePinnedToCore(raceChronoCanNotifyTask, "RaceChronoCanNotify", 4096, nullptr, PRIO_BLE_CAN_NOTIFY, nullptr, xCoreID);
+	xTaskCreatePinnedToCore(raceChronoGpsNotifyTask, "RaceChronoGpsNotify", 4096, nullptr, PRIO_BLE_GPS_NOTIFY, nullptr, xCoreID);
 }
 
 /**

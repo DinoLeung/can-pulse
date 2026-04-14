@@ -12,9 +12,10 @@ constexpr uint32_t GPS_TASK_STACK_SIZE = 4096;
 
 static void readGpsTask(void*);
 
-void startGpsTasks() {
+void startGpsTasks(BaseType_t xCoreID) {
 	initGpsSnapshot();
-	xTaskCreate(readGpsTask, "GPS_Read", GPS_TASK_STACK_SIZE, NULL, PRIO_GPS_READ, NULL);
+	// xTaskCreate(readGpsTask, "GPS_Read", GPS_TASK_STACK_SIZE, NULL, PRIO_GPS_READ, NULL);
+	xTaskCreatePinnedToCore(readGpsTask, "GPS_Read", GPS_TASK_STACK_SIZE, NULL, PRIO_GPS_READ, NULL, xCoreID);
 }
 
 /**

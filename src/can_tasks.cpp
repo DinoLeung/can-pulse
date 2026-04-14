@@ -10,10 +10,10 @@ static QueueHandle_t messageQueue = nullptr;
 static void readCan1EnqueueTask(void*);
 static void forwardCan1ToCan2Task(void*);
 
-void startCanTasks() {
+void startCanTasks(BaseType_t xCoreID) {
 	initCanFrameCache();
 	// messageQueue = xQueueCreate(16, sizeof(twai_message_t));
-	xTaskCreate(readCan1EnqueueTask, "CAN1_Read", 4096, NULL, 1, NULL);
+	xTaskCreatePinnedToCore(readCan1EnqueueTask, "CAN1_Read", 4096, NULL, PRIO_CAN_READ, NULL, xCoreID);
 	// xTaskCreate(forwardCan1ToCan2Task, "CAN1_Forward", 4096, NULL, 1, NULL);
 	// xTaskCreate(sensorCanWriterTask, "Sensor_CAN_Writer", 2048, NULL, 1, NULL);
 }

@@ -15,10 +15,10 @@ void setup() {
 	initGps();
 	initRaceChronoBle();
 	
-	startCanTasks();
-	startGpsTasks();
+	startCanTasks(0);
+	startGpsTasks(0);
 	// startSensorTasks();
-	startRaceChronoTasks();
+	startRaceChronoTasks(1);
 }
 
 void loop() { /* DO NOTHING */ }
