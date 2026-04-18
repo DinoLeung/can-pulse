@@ -92,20 +92,16 @@ class FilterCallbacks : public BLECharacteristicCallbacks {
  *
  * After the service is started the device begins advertising so the
  * RaceChrono mobile app can discover and connect to it.
- *
- * @return true when BLE initialisation completes successfully.
  */
-bool initRaceChronoBle() {
+void initRaceChronoBle() {
 	BLEDevice::init(kDeviceName);
 
 	g_rcBleServer = BLEDevice::createServer();
 	g_rcBleServer->setCallbacks(new ServerCallbacks());
 
 	// Default to deny all mode
-	g_rcPidFilterState.mutex = xSemaphoreCreateMutex();
 	if (g_rcPidFilterState.mutex == nullptr) {
-		ESP_LOGE(TAG, "Failed to create RaceChrono filter mutex");
-		return false;
+		g_rcPidFilterState.mutex = xSemaphoreCreateMutex();
 	}
 	g_rcPidFilterState.allowAll = false;
 	g_rcPidFilterState.allowAllIntervalMs = 0;
@@ -123,7 +119,6 @@ bool initRaceChronoBle() {
 	startRaceChronoAdvertising();
 
 	ESP_LOGI(TAG, "RaceChrono BLE ready");
-	return true;
 }
 
 /**

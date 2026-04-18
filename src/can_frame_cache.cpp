@@ -1,5 +1,8 @@
 #include "can_frame_cache.h"
 #include <Arduino.h>
+#include "esp_log.h"
+
+static const char *TAG = "can_frame_cache";
 
 /**
  * @brief Global CAN frame cache shared across tasks.
@@ -49,6 +52,7 @@ void initCanFrameCache() {
 		g_canFrameCache.entries[i].isExtended = false;
 		memset(g_canFrameCache.entries[i].data, 0, sizeof(g_canFrameCache.entries[i].data));
 	}
+	ESP_LOGI(TAG, "CAM frame cache ready");
 }
 
 /**

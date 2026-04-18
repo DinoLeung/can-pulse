@@ -7,6 +7,9 @@
 #include "gps_snapshot.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
+#include "esp_log.h"
+
+static const char *TAG = "gps_task";
 
 constexpr uint32_t GPS_TASK_STACK_SIZE = 4096;
 
@@ -22,12 +25,12 @@ void startGpsTasks(BaseType_t xCoreID) {
  */
 void readGpsTask(void* pvParameters) {
 	(void)pvParameters;
-
+	ESP_LOGI(TAG, "Start reading GPS");
 	while (true) {
 		bool sentenceCompleted = false;
 		
-		while (Serial1.available() > 0) {
-			if (g_gps.encode(static_cast<char>(Serial1.read()))) {
+		while (g_gpsSerial.available() > 0) {
+			if (g_gps.encode(static_cast<char>(g_gpsSerial.read()))) {
 				sentenceCompleted = true;
 			}
 		}

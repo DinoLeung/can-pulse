@@ -3,6 +3,9 @@
 #include "freertos/queue.h"
 #include "can_bus.h"
 #include "can_frame_cache.h"
+#include "esp_log.h"
+
+static const char *TAG = "can_task";
 
 // message queue for can forwarding task
 static QueueHandle_t messageQueue = nullptr;
@@ -29,6 +32,7 @@ void startCanTasks(BaseType_t xCoreID) {
  */
 void readCan1EnqueueTask(void* pvParameters) {
 	(void)pvParameters;
+	ESP_LOGI(TAG, "Start reading CAN bus");
 	twai_message_t message;
 	while (true) {
 		while (twai_receive(&message, portMAX_DELAY) == ESP_OK) {

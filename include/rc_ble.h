@@ -55,5 +55,5 @@ extern BLECharacteristic* g_rcBleGpsTimeChar;
 extern volatile bool g_rcBleConnected;
 extern uint16_t g_rcBleConnId;
 
-bool initRaceChronoBle();
+void initRaceChronoBle();
 bool bleCanSendNotification();

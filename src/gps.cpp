@@ -6,6 +6,7 @@
 
 static const char *TAG = "gps";
 
+HardwareSerial& g_gpsSerial = Serial1;
 TinyGPSPlus g_gps;
 TinyGPSCustom g_vdop(g_gps, "GPGSA", 17);
 
@@ -22,14 +23,14 @@ void sendSkytraqCommand(const uint8_t* payload, size_t payloadLen) {
         checksum ^= payload[i];
     }
 
-    Serial1.write(0xA0);
-    Serial1.write(0xA1);
-    Serial1.write(static_cast<uint8_t>((payloadLen >> 8) & 0xFF));
-    Serial1.write(static_cast<uint8_t>(payloadLen & 0xFF));
-    Serial1.write(payload, payloadLen);
-    Serial1.write(checksum);
-    Serial1.write(0x0D);
-    Serial1.write(0x0A);
+    g_gpsSerial.write(0xA0);
+    g_gpsSerial.write(0xA1);
+    g_gpsSerial.write(static_cast<uint8_t>((payloadLen >> 8) & 0xFF));
+    g_gpsSerial.write(static_cast<uint8_t>(payloadLen & 0xFF));
+    g_gpsSerial.write(payload, payloadLen);
+    g_gpsSerial.write(checksum);
+    g_gpsSerial.write(0x0D);
+    g_gpsSerial.write(0x0A);
 }
 
 /**
@@ -79,11 +80,11 @@ void configureSkytraqUpdateRate(uint8_t rateHz) {
  * result in the GPS ignoring configuration commands.
  */
 bool initGps() {
-    Serial1.begin(GPS_INITIAL_BAUD, SERIAL_8N1, GPS_UART_RX_PIN, GPS_UART_TX_PIN);
+    g_gpsSerial.begin(GPS_INITIAL_BAUD, SERIAL_8N1, GPS_UART_RX_PIN, GPS_UART_TX_PIN);
     configureSkytraqBaudRate(SKYTRAQ_BAUD_CODE_115200);
     delay(1000);
     
-    Serial1.begin(GPS_OPERATING_BAUD, SERIAL_8N1, GPS_UART_RX_PIN, GPS_UART_TX_PIN);
+    g_gpsSerial.begin(GPS_OPERATING_BAUD, SERIAL_8N1, GPS_UART_RX_PIN, GPS_UART_TX_PIN);
     configureSkytraqUpdateRate(GPS_UPDATE_RATE);
 
     ESP_LOGI(TAG, "GPS ready");
