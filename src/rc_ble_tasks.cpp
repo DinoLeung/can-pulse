@@ -5,6 +5,9 @@
 #include "gps_helper.h"
 #include "can_frame_cache.h"
 #include "gps_snapshot.h"
+#include "esp_log.h"
+
+static const char *TAG = "rc_ble_tasks";
 
 static void raceChronoCanFilterRequestTask(void*);
 static void raceChronoCanNotifyTask(void*);
@@ -61,15 +64,16 @@ static void raceChronoCanFilterRequestTask(void* pvParameters) {
 			for (size_t i = 0; i < kMaxRequestedPids; ++i) {
 				g_rcPidFilterState.requestedPids[i] = RequestedPid{};
 			}
-			Serial.println("RaceChrono filter updated: deny all");
+			ESP_LOGI(TAG, "RaceChrono filter updated: deny all");
 			break;
 
 		case RcFilterCommand::AllowAll:
 			g_rcPidFilterState.allowAll = true;
 			g_rcPidFilterState.allowAllIntervalMs = request.intervalMs;
 			g_rcPidFilterState.requestedPidCount = 0;
-			Serial.printf(
-				"RaceChrono filter updated: allow all: interval=%u ms\n",
+			ESP_LOGI(
+				TAG, 
+				"RaceChrono filter updated: allow all: interval=%u ms",
 				static_cast<unsigned>(request.intervalMs));
 			break;
 
@@ -77,7 +81,7 @@ static void raceChronoCanFilterRequestTask(void* pvParameters) {
 			g_rcPidFilterState.allowAll = false;
 			g_rcPidFilterState.allowAllIntervalMs = 0;
 			if (g_rcPidFilterState.requestedPidCount >= kMaxRequestedPids) {
-				Serial.println("RaceChrono filter request ignored: requested PID list full");
+				ESP_LOGE(TAG, "RaceChrono filter request ignored: requested PID list full");
 				break;
 			}
 
@@ -88,7 +92,8 @@ static void raceChronoCanFilterRequestTask(void* pvParameters) {
 			g_rcPidFilterState.requestedPids[g_rcPidFilterState.requestedPidCount] = requestedPid;
 			++g_rcPidFilterState.requestedPidCount;
 
-			Serial.printf(
+			ESP_LOGI(
+				TAG,
 				"RaceChrono filter updated: allow pid=0x%08lX\n",
 				static_cast<unsigned long>(requestedPid.pid));
 			break;

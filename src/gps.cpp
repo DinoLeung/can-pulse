@@ -2,6 +2,9 @@
 
 #include <cstdlib>
 #include <TinyGPSPlus.h>
+#include "esp_log.h"
+
+static const char *TAG = "gps";
 
 TinyGPSPlus g_gps;
 TinyGPSCustom g_vdop(g_gps, "GPGSA", 17);
@@ -83,6 +86,6 @@ bool initGps() {
     Serial1.begin(GPS_OPERATING_BAUD, SERIAL_8N1, GPS_UART_RX_PIN, GPS_UART_TX_PIN);
     configureSkytraqUpdateRate(GPS_UPDATE_RATE);
 
-    Serial.println("GPS ready");
+    ESP_LOGI(TAG, "GPS ready");
     return true;
 }

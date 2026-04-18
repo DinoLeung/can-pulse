@@ -5,6 +5,9 @@
 #include "esp_gatt_common_api.h"
 #include <freertos/queue.h>
 #include "rc_ble_helper.h"
+#include "esp_log.h"
+
+static const char *TAG = "rc_ble";
 
 static BLEService* createRaceChronoService();
 static void createCanMainCharacteristic(BLEService* service);
@@ -37,12 +40,12 @@ class ServerCallbacks : public BLEServerCallbacks {
 	void onConnect(BLEServer*, esp_ble_gatts_cb_param_t* param) override {
 		g_rcBleConnected = true;
 		g_rcBleConnId = param->connect.conn_id;
-		Serial.println("RaceChrono connected");
+		ESP_LOGI(TAG, "RaceChrono connected");
 	}
 	void onDisconnect(BLEServer* server) override {
 		g_rcBleConnected = false;
 		g_rcBleConnId = kInvalidBleConnId;
-		Serial.println("RaceChrono disconnected");
+		ESP_LOGI(TAG, "RaceChrono disconnected");
 		RcFilterRequest msg{RcFilterCommand::DenyAll, 0, 0};
 		xQueueSend(g_rcPidFilterRequestQueue, &msg, 0);
 		server->getAdvertising()->start();
@@ -66,12 +69,12 @@ class FilterCallbacks : public BLECharacteristicCallbacks {
 
 		RcFilterRequest msg{};
 		if (!parseFilterRequest(value, msg)) {
-			Serial.println("Invalid RaceChrono filter payload");
+			ESP_LOGE(TAG, "Invalid RaceChrono filter payload");
 			return;
 		}
 
 		if (xQueueSend(g_rcPidFilterRequestQueue, &msg, 0) != pdTRUE) {
-			Serial.println("RaceChrono filter queue full");
+			ESP_LOGE(TAG, "RaceChrono filter queue full");
 		}
 	}
 };
@@ -101,7 +104,7 @@ bool initRaceChronoBle() {
 	// Default to deny all mode
 	g_rcPidFilterState.mutex = xSemaphoreCreateMutex();
 	if (g_rcPidFilterState.mutex == nullptr) {
-		Serial.println("Failed to create RaceChrono filter mutex");
+		ESP_LOGE(TAG, "Failed to create RaceChrono filter mutex");
 		return false;
 	}
 	g_rcPidFilterState.allowAll = false;
@@ -119,7 +122,7 @@ bool initRaceChronoBle() {
 	service->start();
 	startRaceChronoAdvertising();
 
-	Serial.println("RaceChrono BLE ready");
+	ESP_LOGI(TAG, "RaceChrono BLE ready");
 	return true;
 }
 
