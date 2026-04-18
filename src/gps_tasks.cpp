@@ -18,6 +18,7 @@ static void readGpsTask(void*);
 void startGpsTasks(BaseType_t xCoreID) {
 	initGpsSnapshot();
 	xTaskCreatePinnedToCore(readGpsTask, "GPS_Read", GPS_TASK_STACK_SIZE, NULL, PRIO_GPS_READ, NULL, xCoreID);
+	ESP_LOGI(TAG, "Start reading GPS");
 }
 
 /**
@@ -25,7 +26,6 @@ void startGpsTasks(BaseType_t xCoreID) {
  */
 void readGpsTask(void* pvParameters) {
 	(void)pvParameters;
-	ESP_LOGI(TAG, "Start reading GPS");
 	while (true) {
 		bool sentenceCompleted = false;
 		

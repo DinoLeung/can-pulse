@@ -17,6 +17,7 @@ void startCanTasks(BaseType_t xCoreID) {
 	initCanFrameCache();
 	// messageQueue = xQueueCreate(16, sizeof(twai_message_t));
 	xTaskCreatePinnedToCore(readCan1EnqueueTask, "CAN1_Read", 4096, NULL, PRIO_CAN_READ, NULL, xCoreID);
+	ESP_LOGI(TAG, "Start reading CAN bus");
 	// xTaskCreate(forwardCan1ToCan2Task, "CAN1_Forward", 4096, NULL, 1, NULL);
 	// xTaskCreate(sensorCanWriterTask, "Sensor_CAN_Writer", 2048, NULL, 1, NULL);
 }
@@ -32,7 +33,6 @@ void startCanTasks(BaseType_t xCoreID) {
  */
 void readCan1EnqueueTask(void* pvParameters) {
 	(void)pvParameters;
-	ESP_LOGI(TAG, "Start reading CAN bus");
 	twai_message_t message;
 	while (true) {
 		while (twai_receive(&message, portMAX_DELAY) == ESP_OK) {
