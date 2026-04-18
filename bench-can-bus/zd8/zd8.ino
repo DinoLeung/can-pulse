@@ -25,8 +25,8 @@ ScheduledPid scheduledPids[] = {
   {0x139,  50, 0},
   {0x13B,  50, 0},
   {0x146,  50, 0},
-  {0x241,  50, 0},
-  {0x345,  50, 0},
+  {0x241,  20, 0},
+  {0x345,  10, 0},
   
   // placeholders
   {0x018, 100, 0},
@@ -74,19 +74,6 @@ void generatePayload(uint16_t pid, uint8_t *payload) {
   memset(payload, 0, 8);
 
   switch (pid) {
-    case 0x018: {
-      // Placeholder heartbeat frame.
-      payload[0] = 0x00;
-      payload[1] = 0x00;
-      payload[2] = 0x00;
-      payload[3] = 0x00;
-      payload[4] = 0x00;
-      payload[5] = 0x00;
-      payload[6] = 0x00;
-      payload[7] = 0x00;
-      break;
-    }
-
     case 0x040: {
       // engine speed / accelerator pos
       payload[0] = 0x00;
@@ -185,6 +172,19 @@ void generatePayload(uint16_t pid, uint8_t *payload) {
       payload[2] = 0x00;
       payload[3] = 0x00;
       payload[4] = 0x90;
+      payload[5] = 0x00;
+      payload[6] = 0x00;
+      payload[7] = 0x00;
+      break;
+    }
+
+    case 0x018: {
+      // Placeholder
+      payload[0] = 0x00;
+      payload[1] = 0x00;
+      payload[2] = 0x00;
+      payload[3] = 0x00;
+      payload[4] = 0x00;
       payload[5] = 0x00;
       payload[6] = 0x00;
       payload[7] = 0x00;

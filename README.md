@@ -29,6 +29,7 @@ Dynamically responds to RaceChrono filter requests, serving only the required si
 
 ### Efficient BLE transport
 Streams CAN data over BLE using the RaceChrono DIY device protocol.
+
 ### High-throughput notifications
 
 Achieves an aggregate BLE notify rate of ~300 Hz, balancing bandwidth across active signals.
@@ -41,6 +42,13 @@ Prioritises fresh data — each frame is sent once, avoiding replay of stale val
 
 ### Integrated high-rate GPS
 Provides GPS data at up to 50 Hz, significantly outperforming typical phone-based GPS (~1 Hz).
+
+### Notes on RaceChrono BLE API
+This firmware intentionally does not fully follow the RaceChrono DIY BLE CAN device API. In particular, it does not honour the requested notify interval in the [CAN-Bus filter allow one PID](https://github.com/aollin/racechrono-ble-diy-device?tab=readme-ov-file#allow-one-pid) message.
+
+RaceChrono consistently requests a 50 ms interval (20 Hz), which is much lower than the native update rate of many vehicle signals. In practice, the app appears to accept updates faster than the requested interval without issue.
+
+To preserve signal fidelity, this firmware sends CAN frames at or near their native rate instead of throttling them to the requested 20 Hz.
 
 
 ## Hardware
