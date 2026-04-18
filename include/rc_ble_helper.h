@@ -1,7 +1,7 @@
 #pragma once
 
 #include <cstdlib>
-#include "gps_snapshot.h"
+#include "gps_cache.h"
 
 enum class RcFilterCommand : uint8_t {
 	DenyAll = 0,
@@ -24,5 +24,5 @@ void writeBe32(const uint32_t value, uint8_t* output);
 
 bool parseFilterRequest(const std::string& value, RcFilterRequest& out);
 void buildRcCanMainPayload(uint32_t framePid, const uint8_t* frameData, uint8_t* outPayload);
-void buildRcGpsMainPayload(const GpsSnapshot& gps, const int8_t syncBits, uint8_t* outPayload);
-void buildRcGpsTimePayload(const GpsSnapshot& gps, const int8_t syncBits, uint8_t* outPayload);
+void buildRcGpsMainPayload(const GpsCache& gps, const int8_t syncBits, uint8_t* outPayload);
+void buildRcGpsTimePayload(const GpsCache& gps, const int8_t syncBits, uint8_t* outPayload);

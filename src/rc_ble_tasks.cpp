@@ -4,7 +4,7 @@
 #include "rc_ble_helper.h"
 #include "gps_helper.h"
 #include "can_frame_cache.h"
-#include "gps_snapshot.h"
+#include "gps_cache.h"
 #include "esp_log.h"
 
 static const char *TAG = "rc_ble_tasks";
@@ -247,9 +247,9 @@ static void raceChronoGpsNotifyTask(void* pvParameters) {
 			continue;
 		}
 		
-		GpsSnapshot snapshot{};
+		GpsCache cache{};
 		int8_t syncBits;
-		bool hasNext = g_gpsSnapshotStore.get(snapshot, syncBits);
+		bool hasNext = g_gpsCacheStore.get(cache, syncBits);
 		
 		if (!hasNext) {
 			vTaskDelay(pdMS_TO_TICKS(1));
@@ -257,11 +257,11 @@ static void raceChronoGpsNotifyTask(void* pvParameters) {
 		}
 				
 		uint8_t gpsTimePayload[3];
-		buildRcGpsTimePayload(snapshot, syncBits, gpsTimePayload);
+		buildRcGpsTimePayload(cache, syncBits, gpsTimePayload);
 		g_rcBleGpsTimeChar->setValue(gpsTimePayload, sizeof(gpsTimePayload));
 		
 		uint8_t gpsMainPayload[20];
-		buildRcGpsMainPayload(snapshot, syncBits, gpsMainPayload);
+		buildRcGpsMainPayload(cache, syncBits, gpsMainPayload);
 		g_rcBleGpsMainChar->setValue(gpsMainPayload, sizeof(gpsMainPayload));
 
 		g_rcBleGpsMainChar->notify();

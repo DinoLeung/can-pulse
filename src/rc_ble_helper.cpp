@@ -177,7 +177,7 @@ void buildRcCanMainPayload(uint32_t framePid, const uint8_t* frameData, uint8_t*
  * @param syncBits 3-bit synchronization counter (0..7).
  * @param outPayload Output buffer of at least 20 bytes.
  */
-void buildRcGpsMainPayload(const GpsSnapshot& gps, const int8_t syncBits, uint8_t* outPayload) {
+void buildRcGpsMainPayload(const GpsCache& gps, const int8_t syncBits, uint8_t* outPayload) {
 	memset(outPayload, 0, 20);
 
 	// Byte 0-2: Sync bits* (3 bits) and time from hour start (21 bits = (minute * 30000) + (seconds * 500) + (milliseconds / 2))
@@ -278,7 +278,7 @@ void buildRcGpsMainPayload(const GpsSnapshot& gps, const int8_t syncBits, uint8_
  * @param syncBits 3-bit synchronization counter (0..7).
  * @param outPayload Output buffer of at least 3 bytes.
  */
-void buildRcGpsTimePayload(const GpsSnapshot& gps, const int8_t syncBits, uint8_t* outPayload) {
+void buildRcGpsTimePayload(const GpsCache& gps, const int8_t syncBits, uint8_t* outPayload) {
 	memset(outPayload, 0, 3);
 
 	const uint32_t syncField = (static_cast<uint32_t>(syncBits) & 0b111U) << 21;

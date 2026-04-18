@@ -3,7 +3,7 @@
 #include <stdint.h>
 #include <TinyGPSPlus.h>
 
-struct GpsSnapshot {
+struct GpsCache {
 	bool timeValid;
 	uint8_t hour;
 	uint8_t minute;
@@ -15,7 +15,6 @@ struct GpsSnapshot {
 	uint8_t month;
 	uint8_t day;
 
-	
 	bool locationValid;
 	double latitudeDeg;
 	double longitudeDeg;
@@ -41,16 +40,16 @@ struct GpsSnapshot {
 	
 };
 
-struct GpsSnapshotStore {
-	GpsSnapshot snapshot;
+struct GpsCacheStore {
+	GpsCache cache;
 	SemaphoreHandle_t mutex;
 	int8_t syncBits = 0;
 	bool pendingNotify;
 	
 	void update();
-	bool get(GpsSnapshot& o_snapshot, int8_t& o_syncBits);
+	bool get(GpsCache& o_cache, int8_t& o_syncBits);
 };
 
-extern GpsSnapshotStore g_gpsSnapshotStore;
+extern GpsCacheStore g_gpsCacheStore;
 
-void initGpsSnapshot();
+void initGpsCache();

@@ -4,7 +4,7 @@
 
 #include "gps.h"
 #include "rc_ble.h"
-#include "gps_snapshot.h"
+#include "gps_cache.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "esp_log.h"
@@ -16,7 +16,7 @@ constexpr uint32_t GPS_TASK_STACK_SIZE = 4096;
 static void readGpsTask(void*);
 
 void startGpsTasks(BaseType_t xCoreID) {
-	initGpsSnapshot();
+	initGpsCache();
 	xTaskCreatePinnedToCore(readGpsTask, "GPS_Read", GPS_TASK_STACK_SIZE, NULL, PRIO_GPS_READ, NULL, xCoreID);
 	ESP_LOGI(TAG, "Start reading GPS");
 }
@@ -35,7 +35,7 @@ void readGpsTask(void* pvParameters) {
 			}
 		}
 		if (sentenceCompleted) {
-			g_gpsSnapshotStore.update();
+			g_gpsCacheStore.update();
 		}
 
 		vTaskDelay(pdMS_TO_TICKS(1));
