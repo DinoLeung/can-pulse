@@ -1,6 +1,6 @@
 #pragma once
 #include <freertos/FreeRTOS.h>
 
-constexpr UBaseType_t PRIO_CAN_READ = 6;
+constexpr UBaseType_t PRIO_CAN_READ = 5;
 
 void startCanTasks(BaseType_t xCoreID);

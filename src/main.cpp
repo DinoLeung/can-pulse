@@ -16,9 +16,9 @@ void setup() {
 	initRaceChronoBle();
 	
 	startCanTasks(0);
-	startGpsTasks(0);
+	startGpsTasks(1);
 	// startSensorTasks();
-	startRaceChronoTasks(1);
+	startRaceChronoTasks();
 }
 
 void loop() { /* DO NOTHING */ }
