@@ -4,6 +4,9 @@
 #include <TinyGPSPlus.h>
 #include "esp_log.h"
 
+#define GPS_UART_RX_PIN GPIO_NUM_41
+#define GPS_UART_TX_PIN GPIO_NUM_40
+
 static const char *TAG = "gps";
 
 HardwareSerial& g_gpsSerial = Serial1;
