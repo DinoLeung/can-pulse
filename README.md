@@ -88,6 +88,24 @@ To preserve signal fidelity, this firmware sends CAN frames at or near their nat
 - Always verify wiring before connecting the device.
 - If unsupported CAN transceivers or constant battery power are used incorrectly, battery drain or communication faults may occur.
 
+### BOM
+
+| Part# | Quantity |
+| -------- | -------- |
+| [ASL ESP-CAN-X2](https://wiki.autosportlabs.com/ESP32-CAN-X2) | 1 |
+| [ASL Gps-bolt-on](https://wiki.autosportlabs.com/Gps-bolt-on) | 1 |
+| PHR-4 | 1 |
+| XHR-7 | 1 |
+| SPH-001T-P0.5L | 4 |
+| SXH-002TP0.6| 7 |
+| CDM810-04A-MW-F810-050-67 | 1 |
+| CDM810-08A-MW-F810-050-67 | 1 |
+| M8 A-coded 4pin female to open end cable | 1 |
+| M8 A-coded 8pin female to open end cable | 1 |
+| Accessing CAN bus via GR86/BRZ ASC port |
+| 1376106-1 | 1 |
+| 1376109-1 | 4 |
+
 ## References
 
 This project is heavily based on reverse engineering work documented by the community, in particular:
