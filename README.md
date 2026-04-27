@@ -97,7 +97,7 @@ To preserve signal fidelity, this firmware sends CAN frames at or near their nat
 | PHR-4 | 1 |
 | XHR-7 | 1 |
 | SPH-001T-P0.5L | 4 |
-| SXH-002TP0.6| 7 |
+| SXH-002T-P0.6| 7 |
 | CDM810-04A-MW-F810-050-67 | 1 |
 | CDM810-08A-MW-F810-050-67 | 1 |
 | M8 A-coded 4pin female to open end cable | 1 |
