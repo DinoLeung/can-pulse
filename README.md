@@ -91,11 +91,12 @@ To preserve signal fidelity, this firmware sends CAN frames at or near their nat
 ### BOM
 
 | Part# | Quantity |
-| -------- | -------- |
+| - | - |
 | [ASL ESP-CAN-X2](https://wiki.autosportlabs.com/ESP32-CAN-X2) | 1 |
 | [ASL Gps-bolt-on](https://wiki.autosportlabs.com/Gps-bolt-on) | 1 |
 | PHR-4 | 1 |
 | XHR-7 | 1 |
+| S7B-XH-A-1 | 1 |
 | SPH-001T-P0.5L | 4 |
 | SXH-002T-P0.6| 7 |
 | CDM810-04A-MW-F810-050-67 | 1 |
@@ -105,6 +106,62 @@ To preserve signal fidelity, this firmware sends CAN frames at or near their nat
 | Accessing CAN bus via GR86/BRZ ASC port |
 | 1376106-1 | 1 |
 | 1376109-1 | 4 |
+
+### Wiring
+
+#### M8 4P, A coding
+
+| Pin# | Connection |
+| - | - |
+| 1 | CAN Low |
+| 2 | PWR |
+| 3 | CAN High |
+| 4 | GND |
+
+#### JST PH 4 Pin
+
+| Pin# | Connection |
+| - | - |
+| 1 | PWR |
+| 2 | CAN High |
+| 3 | CAN Low |
+| 4 | GND |
+
+#### TE 1376106-1
+
+| Pin# | Connection |
+| - | - |
+| 1 or 9 | GND |
+| 4 | CAN High |
+| 11 | PWR |
+| 12 | CAN Low |
+
+See: [Notes](https://github.com/timurrrr/ft86/blob/main/can_bus/gen2.md#asc-port) by timurrrr
+
+#### M8 8P, A coding
+
+| Pin# | Connection |
+| - | - |
+| 1 | PSE_SEL |
+| 2 | P1PS |
+| 3 | VBAT |
+| 4 | VDD |
+| 5 | GND |
+| 6 | TXD |
+| 7 | RXD |
+| 8 | Unused |
+
+#### JST PH 7 Pin
+
+| Pin# | Connection |
+| - | - |
+| 1 | PSE_SEL |
+| 2 | P1PS |
+| 3 | VBAT |
+| 4 | VDD |
+| 5 | GND |
+| 6 | TXD |
+| 7 | RXD |
 
 ## References
 
